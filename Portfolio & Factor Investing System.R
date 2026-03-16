@@ -347,7 +347,7 @@ server <- function(input, output, session) {
   })
   
   
-  # 【產出 2：動態相關係數熱圖】(針對 N 檔標的繪製最新 6 個月平均相關性或近期相關性矩陣)
+  # 【產出 2：動態相關係數熱圖】(針對 N 檔標的繪製最新設定月份之相關性矩陣)
   output$corPlot <- renderPlot({
     mat_data <- ret_matrix_data()
     req(mat_data)
@@ -355,8 +355,9 @@ server <- function(input, output, session) {
     if(n < 2) return(ggplot() + theme_void())
     
     # 對於多檔標的，畫出近期的相關矩陣熱圖
-    # 取最後半年(約 126 個交易日)資料算相關性
-    recent_n <- min(126, nrow(mat_data$returns))
+    # 將使用者選擇的月份轉為數值，並換算交易日 (1個月約 21 個交易日)
+    roll_m <- as.numeric(req(input$roll_months))
+    recent_n <- min(roll_m * 21, nrow(mat_data$returns))
     recent_ret <- tail(mat_data$returns, recent_n)
     cormat <- cor(recent_ret)
     
@@ -365,7 +366,7 @@ server <- function(input, output, session) {
     ggplot(melted_cormat, aes(x=Var1, y=Var2, fill=value)) +
       geom_tile(color = "white") +
       scale_fill_gradient2(low = "#3498db", high = "#e74c3c", mid = "white", 
-                           midpoint = 0, limit = c(-1,1), name="Correlation\n(Last 6 Months)") +
+                           midpoint = 0, limit = c(-1,1), name=paste0("Correlation\n(Last ", roll_m, " Months)")) +
       geom_text(aes(Var1, Var2, label = round(value, 2)), color = "black", size = 6, fontface = "bold") + # 放大方塊內數字
       theme_minimal(base_size = 16) + # 放大整體基底
       theme(
